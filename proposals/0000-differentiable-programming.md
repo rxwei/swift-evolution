@@ -79,9 +79,9 @@
             - [Non-differentiable parameters](#non-differentiable-parameters)
         - [Differential operators](#differential-operators-1)
             - [`gradient(of:)`](#gradientof)
-        - [`gradient(at:in:)`](#gradientatin)
-        - [`valueWithGradient(at:in:)`](#valuewithgradientatin)
-        - [`valueWithPullback(at:in:)`](#valuewithpullbackatin)
+            - [`gradient(at:in:)`](#gradientatin)
+            - [`valueWithGradient(at:in:)`](#valuewithgradientatin)
+            - [`valueWithPullback(at:in:)`](#valuewithpullbackatin)
         - [Static analysis](#static-analysis)
             - [Cross-module opacity](#cross-module-opacity)
             - [Non-differentiable type conversions](#non-differentiable-type-conversions)
@@ -95,6 +95,7 @@
         - [Not support differentiable programming](#not-support-differentiable-programming)
         - [Use another language or framework for differentiable programming](#use-another-language-or-framework-for-differentiable-programming)
         - [Other approaches to differentiable programming](#other-approaches-to-differentiable-programming)
+    - [Acknowledgements](#acknowledgements)
 
 <!-- markdown-toc end -->
 
@@ -210,13 +211,14 @@ public protocol Layer: Differentiable {
 
 public class Dense: Layer { ... }
 public class Convolution: Layer { ... }
+public struct NDArray: Differentiable { ... }
 
 // Client code:
-class MyModel: Layer {
+final class MyModel: Layer {
     let dense1: Dense
     let dense2: Dense
 
-    func callAsFunction(_ input: Input) -> Output {
+    func callAsFunction(_ input: NDArray<Float>) -> NDArray<Float> {
         dense2(dense1(input))
     }
 }
@@ -246,7 +248,7 @@ test.swift:2:4: note: add 'withoutDerivative(at:)' to silence the warning if zer
 
 Unlike library-based automatic differentiation, differentiable programming makes
 many common runtime errors in machine learning become directly debuggable using
-LLDB without library boundaries. Contrary to library-based approaches,
+LLDB without library boundaries. Also contrary to library-based approaches,
 differential operators offered in the `Differentiation` library can be used to
 take the derivative of functions on any type that conforms to the
 `Differentiable` protocol, such as `Float`, `SIMD4<Double>`, `Complex<Double>`,
@@ -1584,10 +1586,10 @@ derivative for another function, hence making the other function differentiable.
 
 A protocol requirement or class method/property/subscript can be made
 differentiable via a derivative function defined in an extension. When a
-protocol requirement is not marked with `@differentiable(reverse)` but has been made
-differentiable by a `@derivative` declaration in a protocol extension, a
-dispatched call to such a member can be differentiated, and the derivative or
-transpose is always the one provided in the protocol extension.
+protocol requirement is not marked with `@differentiable(reverse)` but has been
+made differentiable by a `@derivative` declaration in a protocol extension, a
+dispatched call to such a member can be differentiated, and the derivative is
+always the one provided in the protocol extension.
 
 #### Derivative functions
 
@@ -1936,8 +1938,8 @@ closure. These APIs are called "differential opeators".
 
 `gradient(of:)` is a higher-order function which behaves exactly like the 𝛁
 ([Del](https://en.wikipedia.org/wiki/Del)) operator in mathematics. It takes a
-differentiable closure that returns a scalar and returns its gradient function,
-i.e. a closure which accepts the same arguments as the input closure but returns
+differentiable closure that returns a scalar and its gradient function, i.e. a
+closure which accepts the same arguments as the input closure but returns
 gradient vectors with respect to the input closure's parameter.
 
 ```swift
@@ -1996,7 +1998,7 @@ gradient vector. While it is possible for the developer to call the
 differentiable closure and `gradient(at:in:)` separately, it would lead to
 significant recomputation overhead, because computing the gradient vector of a
 differentiable closure at a value will already compute the closure's original
-result. `valueWithGradient(at:in:)` is an API for efficently computing both the
+result. `valueWithGradient(at:in:)` is an API for efficiently computing both the
 original result and the gradient vector.
 
 ```swift
@@ -2194,6 +2196,12 @@ above for an overview and comparison of automatic differentiation approaches.
 First-class language support for differentiation will enable convenient,
 extensible, and performant differentiable programming in Swift - more so than
 library-based approaches.
+
+## Acknowledgements
+
+The authors would like to thank everybody involved. See the
+[Acknowledgements](https://github.com/apple/swift/blob/main/docs/DifferentiableProgramming.md#acknowledgements)
+section of the manifesto.
 
 <!-- Links -->
 
