@@ -2199,7 +2199,10 @@ library-based approaches.
 
 ## Acknowledgements
 
-The authors would like to thank everybody involved. See the
+The development of this feature started in early 2018 as part of the [Swift for
+TensorFlow](https://www.tensorflow.org/swift) project and has been pioneered by
+engineers from Google. The authors would like to thank everybody involved. See
+the
 [Acknowledgements](https://github.com/apple/swift/blob/main/docs/DifferentiableProgramming.md#acknowledgements)
 section of the manifesto.
 
