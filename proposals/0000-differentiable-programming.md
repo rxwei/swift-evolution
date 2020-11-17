@@ -1,7 +1,7 @@
 # Differentiable programming for gradient-based machine learning
 
 * Proposal: [SE-NNNN](NNNN-filename.md)
-* Authors: [Richard Wei] (other authors pending confirmation)
+* Authors: [Richard Wei] [Dan Zheng] [Marc Rasi] [Bart Chrzaszcz]
 * Review Manager: TBD
 * Status: **Pitch**
 * Implementation: On `main` branch behind `import _Differentiation`
@@ -2209,6 +2209,9 @@ section of the manifesto.
 <!-- Links -->
 
 [Richard Wei]: https://github.com/rxwei
+[Dan Zheng]: https://github.com/dan-zheng
+[Marc Rasi]: https://github.com/marcrasi
+[Bart Chrzaszcz]: https://github.com/bartchr808
 
 [swift-numerics]: https://github.com/apple/swift-numerics
 [SE-0229]: https://github.com/apple/swift-evolution/blob/master/proposals/0229-simd.md
