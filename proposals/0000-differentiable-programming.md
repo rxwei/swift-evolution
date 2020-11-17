@@ -1,7 +1,7 @@
 # Differentiable programming for gradient-based machine learning
 
 * Proposal: [SE-NNNN](NNNN-filename.md)
-* Authors: [Richard Wei] [Dan Zheng] [Marc Rasi] [Bart Chrzaszcz]
+* Authors: [Richard Wei], [Dan Zheng], [Marc Rasi], [Bart Chrzaszcz]
 * Review Manager: TBD
 * Status: **Pitch**
 * Implementation: On `main` branch behind `import _Differentiation`
