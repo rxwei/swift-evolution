@@ -112,8 +112,8 @@ take advantange of software debugging tools and compile-time code diagnostics or
 to maintain type safety in large-scale software.
 
 As a compiled programming language with a modern type system, Swift has a unique
-opportunity to develop its own numeric computing and ML ecosystem. Driven by the
-growing needs of ML libraries and algorithms, we believe one key technology,
+opportunity to develop its own numerical computing and ML ecosystem. Driven by
+the growing needs of ML libraries and algorithms, we believe one key technology,
 differentiable programming, will help push ML development experience and
 developer productivity to a whole new level.
 
