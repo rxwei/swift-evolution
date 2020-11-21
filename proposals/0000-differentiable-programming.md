@@ -825,8 +825,8 @@ system.
 Custom types can be extended to be differentiable with minimal boilerplate.
 Custom derivative functions can be retroactively registered for existing
 functions. Users can define custom differentiation APIs using the powerful
-primitive operators defined in the standard library and supported by the type
-system.
+primitive operators defined in the `Differentiation` module and supported by the
+type system.
 
 #### Static warnings and errors
 
@@ -886,16 +886,20 @@ changing the high-level differentiable programming features proposed here.
 
 To push Swift's capabilities to the next level in numerics and machine learning,
 we introduce differentiable programming as a new language feature, which
-includes standard library APIs and small additive changes to the type system.
+includes APIs added to a new module and small additive changes to the type
+system.
 
 ### The `Differentiable` protocol
 
-`Differentiable` is a protocol defined in the standard library that generalizes
-all data structures that can be a parameter or result of a differentiable
-function. The compiler derives protocol requirement implementations when a
-conformance is declared and when any implementation is missing.
+`Differentiable` is a protocol defined in the `Differentiation` module that
+generalizes all data structures that can be a parameter or result of a
+differentiable function. The compiler derives protocol requirement
+implementations when a conformance is declared and when any implementation is
+missing.
 
 ```swift
+import Differentiation
+
 extension Float: Differentiable {
     typealias TangentVector = Self
 }
@@ -912,6 +916,8 @@ function-like declarations (function declarations, initializers, properties, and
 subscripts) as being differentiable.
 
 ```swift
+import Differentiation
+
 @differentiable(reverse)
 func cubed(_ x: Float) -> Float {
     x * x * x
@@ -941,6 +947,8 @@ is passed. A normal function can be implicitly converted to a `@differentiable(r
 function with appropriate compile-time checks.
 
 ```swift
+import Differentiation
+
 func addOne(_ x: Float) -> Float { x + 1 }
 let _: @differentiable(reverse) (Float) -> Float = addOne
 ```
@@ -957,6 +965,7 @@ The `Differentiation` library uses this attribute to define derivatives for math
 functions, such as `expf(_:)` in the C standard library.
 
 ```swift
+import Differentiation
 import Darwin // Or 'Glibc' on Linux
 
 @usableFromInline
@@ -978,6 +987,8 @@ functions, pullback closures, or tangent vectors.
 //     public func gradient<T: Differentiable, R: FloatingPoint>(
 //       of f: @differentiable(reverse) (T) -> R
 //     ) -> (T) -> T.TangentVector where R.TangentVector == R
+
+import Differentiation
 
 func f(_ x: Float) -> Float {
     x * x
@@ -1002,9 +1013,9 @@ general, when a type is said to be differentiable, it means that one can do
 calculus with its values. As such, real numbers, real vector spaces, and complex
 vector spaces are differentiable, but characters, strings, and integers are not.
 
-For full flexibility and extensibility, a protocol is introduced in the Swift
-standard library to generalize all data structures that can be a parameter or a
-result of a differentiable function.
+For full flexibility and extensibility, a protocol is introduced in the
+`Differentiation` module to generalize all data structures that can be a
+parameter or a result of a differentiable function.
 
 #### The `Differentiable` protocol
 
@@ -1076,11 +1087,11 @@ applies to vector-valued functions when they are split into their coordinate
 functions. The derivative of a vector-valued function at a certain point is
 called a [tangent vector](https://en.wikipedia.org/wiki/Tangent_vector). Beyond
 real numbers and vector spaces, there is a widely accepted mathematical
-framework,
-[differential geometry](https://en.wikipedia.org/wiki/Differential_geometry),
-which generalizes calculus beyond Euclidean space. By bringing ideas from this
-mathematical framework into the Swift standard library and the Swift compiler,
-differentiable programming becomes more flexible and expressive than ever.
+framework, [differential
+geometry](https://en.wikipedia.org/wiki/Differential_geometry), which
+generalizes calculus beyond Euclidean space. By bringing ideas from this
+mathematical framework into Swift, differentiable programming becomes more
+flexible and expressive than ever.
 
 <p align="center">
   <img src="assets/0000-differentiable-programming/differentiable-manifolds.png" height=300px>
@@ -1136,13 +1147,14 @@ property in `Array`.
 
 Conforming a type to `Differentiable` tells Swift that changes in values of this
 type can be differentiated, and makes functions over this type be compatible
-with all differentiation APIs in the standard library. Floating point numeric
-types and vector types, including
-[`Float16`](https://developer.apple.com/documentation/swift/float16),
+with all differentiation APIs in the `Differentiation` module. In the
+`Differentiation` module, floating-point numeric types and vector types,
+including [`Float16`](https://developer.apple.com/documentation/swift/float16),
 [`Float`](https://developer.apple.com/documentation/swift/float),
 [`Double`](https://developer.apple.com/documentation/swift/double),
-[`Float80`](https://developer.apple.com/documentation/swift/float80), and
-[SIMD vector types](https://developer.apple.com/documentation/swift/swift_standard_library/numbers_and_basic_values/simd_vector_types),
+[`Float80`](https://developer.apple.com/documentation/swift/float80), and [SIMD
+vector
+types](https://developer.apple.com/documentation/swift/swift_standard_library/numbers_and_basic_values/simd_vector_types),
 are extended to conform to `Differentiable`, and their `TangentVector`s equal
 themselves.
 
@@ -1157,8 +1169,8 @@ dynamic differentiable algorithms. Similarly, other common container types in
 the standard library such as
 [`Optional`](https://developer.apple.com/documentation/swift/optional), and
 [`Result`](https://developer.apple.com/documentation/swift/result) can also be
-made differentiable via a conditional protocol conformance. We will pursue
-adding these conformances in a follow-up proposal.
+made differentiable in the `Differentiation` module via a conditional protocol
+conformance. We will pursue adding these conformances in a follow-up proposal.
 
 ```swift
 // struct Array<Element>
@@ -1418,12 +1430,13 @@ At the heart of a differentiable programming language is the ability to express
 differentiable functions, from abstract manifold operations all the way down to
 floating point addition. Because differentiable programming is a flexible and
 extensible language feature in Swift, the compiler is agnostic of actual
-mathematical operations—it does not have special knowledge of standard library
+mathematical operations — it does not have special knowledge of standard library
 operators such as
-[Float.+(_:_:)](https://developer.apple.com/documentation/swift/float/2894068),
+[`Float.+(_:_:)`](https://developer.apple.com/documentation/swift/float/2894068),
 nor does it distinguish between primitive operations and normal functions. A
-function can be differentiated with respect to certain Differentiable-conforming
-parameters if it satisfies one of the following requirements:
+function can be differentiated with respect to certain
+`Differentiable`-conforming parameters if it satisfies one of the following
+requirements:
 
 -   Base case: A derivative function for it with respect to those parameters
     exists in code.
@@ -1703,6 +1716,8 @@ import func Glibc.sinf
 
 // Imported:
 //     public func sinf(Float) -> Float
+
+import Differentiation
 
 @derivative(of: sinf)
 public func derivativeOfSinf(_ x: Float) -> (value: Float, pullback: (Float) -> Float) {
@@ -2057,9 +2072,9 @@ func valueWithPullback<T: Differentiable, R: Differentiable>(
 
 Differentiable programming in Swift aims to provide the best static compiler
 diagnostics to help users catch mistakes. Beyond error diagnostics, the compiler
-and the standard library are equipped with static analyses and marker APIs that
-help the user write differentiable code with explicit annotations about
-non-obvious non-differentiable cases.
+and the `Differentiation` module are equipped with static analyses and marker
+APIs that help the user write differentiable code with explicit annotations
+about non-obvious non-differentiable cases.
 
 #### Cross-module opacity
 
@@ -2153,8 +2168,8 @@ bundle of two functions, the original function and the derivative function.
 ## Effect on API resilience
 
 This feature adds the [`Differentiable` protocol](#differentiable-protocol) and
-[differential operators](#differential-operators) to the standard library as
-public APIs. They introduce additions to the standard library.
+[differential operators](#differential-operators) to a new module named
+`Differentiation`. It does not introduce any changes to the standard library.
 
 ### `Differentiable` protocol
 
@@ -2166,8 +2181,8 @@ implementations.
 ### Differential operators
 
 Differential operators (e.g. `derivative(of:)` and `gradient(of:)`) are added to
-the standard library as lightweight top-level higher-order functions. These APIs
-can be renamed or moved under some namespace without breaking ABI.
+the `Differentiation` module as lightweight top-level higher-order functions.
+These APIs can be renamed or moved under some namespace without breaking ABI.
 
 ## Alternatives considered
 
