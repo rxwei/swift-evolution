@@ -1829,7 +1829,8 @@ declarations.
 
 `@differentiable(reverse)` requires the enclosing function type to have differentiable
 parameters and results. Each parameter and result must conform to the
-`Differentiable` protocol unless marked `@noDerivative`.
+`Differentiable` protocol unless marked `@noDerivative`. There must be at least
+one parameter that is not marked `@noDerivative`.
 
 #### Type conversion
 
