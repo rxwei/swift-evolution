@@ -1056,13 +1056,6 @@ public protocol Differentiable {
     @noDerivative
     var zeroTangentVectorInitializer: () -> TangentVector { get }
 }
-
-extension Differentiable {
-    /// A tangent vector such that `move(along: zeroTangentVector)` will not modify
-    /// `self`.
-    @noDerivative
-    var zeroTangentVector: TangentVector { zeroTangentVectorInitializer() }
-}
 ```
 
 Specifically, `Differentiable` generalizes types to satisfy the following
