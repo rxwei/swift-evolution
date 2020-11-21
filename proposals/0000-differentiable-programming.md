@@ -969,13 +969,14 @@ func derivativeOfExpf(_ x: Float) -> (value: Float, pullback: (Float) -> Float) 
 
 ### Differential operators
 
-Standard library differentiation APIs that take `@differentiable(reverse)` functions and
-return derivative functions or compute derivative values.
+Defined in the `Differentiation` module, differential operators are higher-order
+functions which accept `@differentiable(reverse)` functions and return gradient
+functions, pullback closures, or tangent vectors.
 
 ```swift
-// In the standard library:
-//     public func gradient<T, R: FloatingPoint>(
-//       of body: @differentiable(reverse) (T) -> R
+// In the `Differentiation` module:
+//     public func gradient<T: Differentiable, R: FloatingPoint>(
+//       of f: @differentiable(reverse) (T) -> R
 //     ) -> (T) -> T.TangentVector where R.TangentVector == R
 
 func f(_ x: Float) -> Float {
@@ -1892,10 +1893,10 @@ let f2: @differentiable(reverse) (@noDerivative Float, Float, @noDerivative Floa
 #### Non-differentiable parameters
 
 Like function declarations with a `@differentiable(reverse)` attribute,
-differentiable function values can also be differentiable with respect to a
-subset of parameters. This is expressed as part of type information, in
-`@differentiable(reverse)` function types, using a `@noDerivative` attribute at
-each parameter that is not being differentiated with respect to.
+differentiable closure values can also be differentiable with respect to a
+subset of parameters. This is expressed as part of its function types using a
+`@noDerivative` attribute at each parameter that is not being differentiated
+with respect to.
 
 By default, all parameters are being differentiated with respect to. When a
 `@noDerivative` attribute is specified for a parameter in a
@@ -1932,35 +1933,37 @@ closure. These APIs are called "differential opeators".
 
 `gradient(of:)` is a higher-order function which behaves exactly like the 𝛁
 ([Del](https://en.wikipedia.org/wiki/Del)) operator in mathematics. It takes a
-differentiable closure that returns a scalar and its gradient function, i.e. a
-closure which accepts the same arguments as the input closure but returns
-gradient vectors with respect to the input closure's parameter.
+reverse-differentiable closure that returns a scalar, and returns a closure that
+represents its gradient function, i.e. a function which accepts the same
+arguments as the input closure but returns gradient vectors with respect to the
+input function's parameter.
 
 ```swift
-/// Returns the gradient function of the given closure with respect to the argument.
+/// Returns the gradient function of the given closure with respect to its parameter.
 /// - Parameter:
-///   - body: A closure whose derivative function will be evaluated.
-/// - Returns: A gradient vector with respect to `x`.
+///   - f: A reverse-differentiable closure whose derivative function will be evaluated.
+/// - Returns: A closure which, when applied to an argument `x`, computes `𝛁f(x)`,
+///   i.e. the gradient vector of `f` with respect to `x`.
 func gradient<T: Differentiable, R: FloatingPoint & Differentiable>(
-    of body: @escaping @differentiable(reverse) (T) -> R
+    of f: @escaping @differentiable(reverse) (T) -> R
 ) -> (T) -> T.TangentVector where R.TangentVector: FloatingPoint
 ```
 
 #### `gradient(at:in:)`
 
 `gradient(at:in:)` is the "uncurried" form of `gradient(of:)`. It takes a value
-and a differentiable closure that returns a scalar, and evalutes the closure's
-gradient function on the value.
+and a reverse-differentiable closure that returns a scalar, and evalutes the
+provided closure's gradient function on the value.
 
 ```swift
 /// Returns the gradient vector with respect to the argument by evaluating the
 /// provided closure's derivative at the argument.
 /// - Parameter:
-///   - x: An argument to be passed to `body`.
-///   - body: A closure whose derivative function will be evaluated.
+///   - x: An argument to be passed to `f`.
+///   - f: A reverse-differentiable closure whose derivative function will be evaluated.
 /// - Returns: A gradient vector with respect to `x`.
 func gradient<T: Differentiable, R: FloatingPoint & Differentiable>(
-    at x: T, in body: @differentiable(reverse) (T) -> R
+    at x: T, in f: @differentiable(reverse) (T) -> R
 ) -> T.TangentVector where R.TangentVector: FloatingPoint
 ```
 
@@ -1989,22 +1992,22 @@ for _ in 0..<1000 {
 
 Sometimes the developer needs to obtain both the original result and the
 gradient vector. While it is possible for the developer to call the
-differentiable closure and `gradient(at:in:)` separately, it would lead to
-significant recomputation overhead, because computing the gradient vector of a
-differentiable closure at a value will already compute the closure's original
-result. `valueWithGradient(at:in:)` is an API for efficiently computing both the
-original result and the gradient vector.
+reverse-differentiable closure and `gradient(at:in:)` separately, it would lead
+to significant recomputation overhead, because computing the gradient vector of
+a reverse-differentiable closure at a value will already compute the closure's
+original result. `valueWithGradient(at:in:)` is an API for efficiently computing
+both the original result and the gradient vector.
 
 ```swift
 /// Returns the result and gradient vector with respect to the argument by evaluating the
 /// provided closure's derivative at the argument.
 /// - Parameter:
-///   - x: An argument to be passed to `body`.
-///   - body: A closure whose derivative function will be evaluated.
-/// - Returns: The result of `body` evaluated on `x`, equivalent to `body(x)`, and
+///   - x: An argument to be passed to `f`.
+///   - f: A reverse-differentiable closure whose derivative function will be evaluated.
+/// - Returns: The result of `f` evaluated on `x`, equivalent to `f(x)`, and
 ///   a gradient vector with respect to `x`.
 func valueWithGradient<T: Differentiable, R: FloatingPoint & Differentiable>(
-    at x: T, in body: @differentiable(reverse) (T) -> R
+    at x: T, in f: @differentiable(reverse) (T) -> R
 ) -> (value: R, gradient: T.TangentVector) where R.TangentVector: FloatingPoint
 ```
 
@@ -2038,15 +2041,15 @@ implemented in terms of `valueWithPullback(at:in:)`.
 /// Returns the result and pullback closure by evaluating the provided closure's
 /// derivative at the argument.
 /// - Parameter:
-///   - x: An argument to be passed to `body`.
-///   - body: A closure whose derivative function will be evaluated.
-/// - Returns: The result of `body` evaluated on `x`, equivalent to `body(x)`, and
-///   a pullback closure, which represents a transposed linear combination that
-///   approximates `body` at `x`. When evaluated on a tangent vector, `pullback` evaluates
+///   - x: An argument to be passed to `f`.
+///   - f: A reverse-differentiable closure whose derivative function will be evaluated.
+/// - Returns: The result of `f` evaluated on `x`, equivalent to `f(x)`, and
+///   a pullback closure which represents a transposed linear combination that
+///   approximates `f` at `x`. When evaluated on a tangent vector, `pullback` evaluates
 ///   the linear comibination on the tangent vector and returns a gradient vector with
 ///   respect to `x`.
 func valueWithPullback<T: Differentiable, R: Differentiable>(
-    at x: T, in body: @differentiable(reverse) (T) -> R
+    at x: T, in f: @differentiable(reverse) (T) -> R
 ) -> (value: R, pullback: (R.TangentVector) -> T.TangentVector)
 ```
 
