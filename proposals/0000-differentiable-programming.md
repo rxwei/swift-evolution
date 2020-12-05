@@ -49,7 +49,7 @@
         - [The `@differentiable(reverse)` declaration attribute](#the-differentiablereverse-declaration-attribute)
         - [`@differentiable(reverse)` function types](#differentiablereverse-function-types)
         - [`@derivative` attribute](#derivative-attribute)
-        - [Differential operators](#differential-operators)
+        - [Higher-order functions for differentiation](#higher-order-functions-for-differentiation)
     - [Detailed design](#detailed-design)
         - [Differentiable data structures](#differentiable-data-structures)
             - [The `Differentiable` protocol](#the-differentiable-protocol-1)
@@ -77,11 +77,11 @@
                 - [Coercing function declarations into `@differentiable(reverse)` function values](#coercing-function-declarations-into-differentiablereverse-function-values)
                 - [Upcasting to non-`@differentiable(reverse)` functions](#upcasting-to-non-differentiablereverse-functions)
             - [Non-differentiable parameters](#non-differentiable-parameters)
-        - [Differential operators](#differential-operators-1)
+        - [Higher-order functions for differentiation](#higher-order-functions-for-differentiation-1)
             - [`gradient(of:)`](#gradientof)
-            - [`gradient(at:in:)`](#gradientatin)
-            - [`valueWithGradient(at:in:)`](#valuewithgradientatin)
-            - [`valueWithPullback(at:in:)`](#valuewithpullbackatin)
+            - [`gradient(at:of:)`](#gradientatof)
+            - [`valueWithGradient(at:of:)`](#valuewithgradientatof)
+            - [`valueWithPullback(at:of:)`](#valuewithpullbackatof)
         - [Static analysis](#static-analysis)
             - [Cross-module opacity](#cross-module-opacity)
             - [Non-differentiable type conversions](#non-differentiable-type-conversions)
@@ -90,7 +90,7 @@
     - [Effect on ABI stability](#effect-on-abi-stability)
     - [Effect on API resilience](#effect-on-api-resilience)
         - [`Differentiable` protocol](#differentiable-protocol)
-        - [Differential operators](#differential-operators-2)
+        - [Higher-order functions for differentiation](#higher-order-functions-for-differentiation-2)
     - [Alternatives considered](#alternatives-considered)
         - [Not support differentiable programming](#not-support-differentiable-programming)
         - [Use another language or framework for differentiable programming](#use-another-language-or-framework-for-differentiable-programming)
@@ -132,8 +132,8 @@ At a glance, this feature includes the following additions:
 - A `Differentiation` module to be distributed in Swift releases, containing:
   - A `Differentiable` protocol, generalizing data structures that are
     differentiable.
-  - Differential operators (e.g. `gradient(of:)`), for evaluating the
-    derivatives of functions.
+  - Higher-order functions (e.g. `gradient(of:)`) for evaluating the derivatives
+    of functions.
 
 Differentiable programming is a new paradigm for programming in which programs
 can be differentiated throughout. At a glance, differentiable programming lets
@@ -154,7 +154,7 @@ The ability to get derivatives of programs enables a new world of numerical
 computing applications, notably machine learning. With first-class support,
 gradient-based learning algorithms can even be built using standard library
 types such as `Float` and `SIMD64<Float>` and be differentiated using
-protocol-oriented APIs such as `valueWithGradient(at:in:)`.
+protocol-oriented APIs such as `valueWithGradient(at:of:)`.
 
 ```swift 
 import Differentiation
@@ -249,7 +249,7 @@ test.swift:2:4: note: add 'withoutDerivative(at:)' to silence the warning if zer
 Unlike library-based automatic differentiation, differentiable programming makes
 many common runtime errors in machine learning become directly debuggable using
 LLDB without library boundaries. Also contrary to library-based approaches,
-differential operators offered in the `Differentiation` library can be used to
+higher-order functions offered in the `Differentiation` library can be used to
 take the derivative of functions on any type that conforms to the
 `Differentiable` protocol, such as `Float`, `SIMD4<Double>`, `Complex<Double>`,
 `[Float]` and custom types. This enables programmers to integrate gradient-based
@@ -404,9 +404,10 @@ prefer safer programming: features like type checking and static diagnostics
 help catch errors early and improve productivity.
 
 Differentiable programming in Swift enables safe, expressive machine learning.
-Custom differentiable data structures can be declared and checked at
-compile time. Thanks to protocol-oriented programming, differentiable types are
-generalized by a protocol, enabling differential operators to be defined as
+Custom differentiable data structures can be declared and checked at compile
+time. Thanks to protocol-oriented programming, differentiable types are
+generalized by a protocol, enabling [differential
+operators](https://en.wikipedia.org/wiki/Differential_operator) to be defined as
 higher-order functions constrained on such a protocol. Mathematical optimization
 algorithms such as neural network optimizers can also be defined generically
 over such a protocol and work with all differentiable types.
@@ -976,11 +977,13 @@ func derivativeOfExpf(_ x: Float) -> (value: Float, pullback: (Float) -> Float) 
 }
 ```
 
-### Differential operators
+### Higher-order functions for differentiation
 
-Defined in the `Differentiation` module, differential operators are higher-order
-functions which accept `@differentiable(reverse)` functions and return gradient
-functions, pullback closures, or tangent vectors.
+Defined in the `Differentiation` module, higher-order functions for
+differentiation are equivalents of mathemtical [differential
+operators](https://en.wikipedia.org/wiki/Differential_operator) which accept
+`@differentiable(reverse)` functions and return gradient functions, pullback
+closures, or tangent vectors.
 
 ```swift
 // In the `Differentiation` module:
@@ -1631,8 +1634,8 @@ func derivativeOfExpf(_ x: Float) -> (value: Float, pullback: (Float) -> Float) 
 
 When one declares a derivative function for an existing function, the derivative
 function defined will be rarely ever used because it is already associated with
-the original function and can be obtained by using a differential operator such
-as `valueWithPullback(at:in:)`. Therefore, a possible future direction is to
+the original function and can be obtained by using a higher-order function such
+as `valueWithPullback(at:of:)`. Therefore, a possible future direction is to
 allow functions to be declared with an anonymous identifier, such as `_`.
 However, this is out of the scope of this proposal.
 
@@ -1937,12 +1940,13 @@ _ = f0 as @differentiable(reverse) (@noDerivative Float, Float) -> Float
 _ = f0 as @differentiable(reverse) (@noDerivative Float, @noDerivative Float) -> Float
 ```
 
-### Differential operators
+### Higher-order functions for differentiation
 
 The `Differentiation` module will provide APIs which developers can use to
 obtain gradient functions, gradient vectors, and pullback closures, along with
 efficiently-computed original results from a given `@differentiable(reverse)`
-closure. These APIs are called "differential opeators".
+closure. These APIs are categorized as [differential
+operators](https://en.wikipedia.org/wiki/Differential_operator) in mathematics.
 
 #### `gradient(of:)`
 
@@ -1964,9 +1968,9 @@ func gradient<T: Differentiable, R: FloatingPoint & Differentiable>(
 ) -> (T) -> T.TangentVector where R.TangentVector: FloatingPoint
 ```
 
-#### `gradient(at:in:)`
+#### `gradient(at:of:)`
 
-`gradient(at:in:)` is the "uncurried" form of `gradient(of:)`. It takes a value
+`gradient(at:of:)` is the "uncurried" form of `gradient(of:)`. It takes a value
 and a reverse-differentiable closure that returns a scalar, and evalutes the
 provided closure's gradient function on the value.
 
@@ -1978,7 +1982,7 @@ provided closure's gradient function on the value.
 ///   - f: A reverse-differentiable closure whose derivative function will be evaluated.
 /// - Returns: A gradient vector with respect to `x`.
 func gradient<T: Differentiable, R: FloatingPoint & Differentiable>(
-    at x: T, in f: @differentiable(reverse) (T) -> R
+    at x: T, of f: @differentiable(reverse) (T) -> R
 ) -> T.TangentVector where R.TangentVector: FloatingPoint
 ```
 
@@ -2003,14 +2007,14 @@ for _ in 0..<1000 {
 }
 ```
 
-#### `valueWithGradient(at:in:)`
+#### `valueWithGradient(at:of:)`
 
 Sometimes the developer needs to obtain both the original result and the
 gradient vector. While it is possible for the developer to call the
-reverse-differentiable closure and `gradient(at:in:)` separately, it would lead
+reverse-differentiable closure and `gradient(at:of:)` separately, it would lead
 to significant recomputation overhead, because computing the gradient vector of
 a reverse-differentiable closure at a value will already compute the closure's
-original result. `valueWithGradient(at:in:)` is an API for efficiently computing
+original result. `valueWithGradient(at:of:)` is an API for efficiently computing
 both the original result and the gradient vector.
 
 ```swift
@@ -2022,7 +2026,7 @@ both the original result and the gradient vector.
 /// - Returns: The result of `f` evaluated on `x`, equivalent to `f(x)`, and
 ///   a gradient vector with respect to `x`.
 func valueWithGradient<T: Differentiable, R: FloatingPoint & Differentiable>(
-    at x: T, in f: @differentiable(reverse) (T) -> R
+    at x: T, of f: @differentiable(reverse) (T) -> R
 ) -> (value: R, gradient: T.TangentVector) where R.TangentVector: FloatingPoint
 ```
 
@@ -2041,16 +2045,17 @@ let dydx = gradient(at: x, in: foo)
 let (y, dydx) = valueWithGradient(at: x, in: foo)
 ```
 
-#### `valueWithPullback(at:in:)`
+#### `valueWithPullback(at:of:)`
 
-`valueWithPullback(at:in:)` is the most general form of differential operator
-for reverse-mode automatic differentiation. Unlike `valueWithGradient(at:in:)`
-which directly computes the gradient vector, `valueWithPullback(at:in:)` returns
-a pullback closure that represents a linear approximation of the input closure
-at the given value. This formulation corresponds exactly to derivative functions
-that are defined with `@derivative`, and enables the most flexibility and
-composability. In fact, all other differential operators discussed above are
-implemented in terms of `valueWithPullback(at:in:)`.
+`valueWithPullback(at:of:)` is the most general form of mathematical
+differential operator for reverse-mode automatic differentiation. Unlike
+`valueWithGradient(at:of:)` which directly computes the gradient vector,
+`valueWithPullback(at:of:)` returns a pullback closure that represents a linear
+approximation of the input closure at the given value. This formulation
+corresponds exactly to derivative functions that are defined with `@derivative`,
+and enables the most flexibility and composability. In fact, all other
+higher-order functions discussed above are implemented in terms of
+`valueWithPullback(at:of:)`.
 
 ```swift
 /// Returns the result and pullback closure by evaluating the provided closure's
@@ -2064,7 +2069,7 @@ implemented in terms of `valueWithPullback(at:in:)`.
 ///   the linear comibination on the tangent vector and returns a gradient vector with
 ///   respect to `x`.
 func valueWithPullback<T: Differentiable, R: Differentiable>(
-    at x: T, in f: @differentiable(reverse) (T) -> R
+    at x: T, of f: @differentiable(reverse) (T) -> R
 ) -> (value: R, pullback: (R.TangentVector) -> T.TangentVector)
 ```
 
@@ -2086,7 +2091,7 @@ marked with `@differentiable(reverse)` or that have been provided with a
 derivative function, but not of functions that have not been marked this way
 without defining a custom derivative for it. For example, if we try to
 differentiate [`sinf(_:)`](https://en.cppreference.com/w/c/numeric/math/sin)
-with the `gradient(at:in:)` API, the compiler will produce error messages at
+with the `gradient(at:of:)` API, the compiler will produce error messages at
 compile time instead of producing zero derivatives.
 
 ```swift
@@ -2178,10 +2183,10 @@ be differentiated. Without breaking API, it will be possible to add extensions
 to the `Differentiable` protocol and add new requirements with default
 implementations.
 
-### Differential operators
+### Higher-order functions for differentiation
 
-Differential operators (e.g. `derivative(of:)` and `gradient(of:)`) are added to
-the `Differentiation` module as lightweight top-level higher-order functions.
+Higher-order functions such as `derivative(of:)` and `gradient(of:)` are added
+to the `Differentiation` module as lightweight top-level higher-order functions.
 These APIs can be renamed or moved under some namespace without breaking ABI.
 
 ## Alternatives considered
