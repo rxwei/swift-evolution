@@ -2070,7 +2070,7 @@ higher-order functions discussed above are implemented in terms of
 ///   respect to `x`.
 func valueWithPullback<T: Differentiable, R: Differentiable>(
     at x: T, of f: @differentiable(reverse) (T) -> R
-) -> (value: R, pullback: (R.TangentVector) -> T.TangentVector)
+) -> (value: R, pullback: (__owned R.TangentVector) -> T.TangentVector)
 ```
 
 ### Static analysis
