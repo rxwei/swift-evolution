@@ -1039,37 +1039,6 @@ public protocol Differentiable {
     /// equivalent to exponential map, which moves `self` on the geodesic
     /// surface along the given tangent vector.
     mutating func move(along direction: TangentVector)
-    
-    /// A closure that produces a zero tangent vector and does not capture `self`.
-    ///
-    /// In some cases, the zero tangent vector of `self` is equal to
-    /// `TangentVector.zero`. In other cases, the zero tangent vector depends on
-    /// information in `self`, such as shape for an n-dimensional array type.
-    /// For differentiable programming, it is more memory-efficient to define a
-    /// custom `zeroTangentVectorInitializer` property which returns a closure
-    /// that captures and uses only the necessary information to create a zero
-    /// tangent vector. For example:
-    ///
-    /// ```swift
-    /// struct Vector {
-    ///     var scalars: [Float]
-    ///     var count: Int { scalars.count }
-    ///     init(repeating repeatedElement: Float, count: Int) { ... }
-    /// }
-    /// 
-    /// extension Vector: Differentiable {
-    ///     typealias TangentVector = Vector
-    ///
-    ///     @noDerivative
-    ///     var zeroTangentVectorInitializer: () -> TangentVector {
-    ///         let count = self.count
-    ///         return { TangentVector(repeating: 0, count: count) }
-    ///     }
-    /// }
-    /// ```
-    ///
-    @noDerivative
-    var zeroTangentVectorInitializer: () -> TangentVector { get }
 }
 ```
 
@@ -1138,14 +1107,6 @@ public extension Differentiable where Self == TangentVector {
 }
 ```
 
-The `zeroTangentVectorInitializer` property returns a closure that returns a
-tangent vector such that calling `move(along:)` on the vector will not modify
-`self`. A zero tangent vector is often used in the initialization of
-mathematical optimization, where tangent vectors are initially zero and modified
-iteratively. This property may be different from `TangentVector.zero` because
-some tangent vectors depend on instance properties of `self`, e.g. the `count`
-property in `Array`.
-
 #### `Differentiable` conformances
 
 Conforming a type to `Differentiable` tells Swift that changes in values of this
@@ -1183,23 +1144,20 @@ extension Array: Differentiable where Element: Differentiable {
     // conformance constraint.
     public struct TangentVector: Differentiable, AdditiveArithmetic {
         public typealias TangentVector = Self
+
         @differentiable(reverse)
         public var elements: [Element.TangentVector]
+
         @differentiable(reverse)
         public init(_ elements: [Element.TangentVector]) { self.elements = elements }
+
+        public static var zero: TangentVector { TangentVector([]) }
         ...
     }
 
     public mutating func move(along direction: TangentVector) {
         for i in indices {
             self[i].move(along: Element.TangentVector(direction.elements[i]))
-        }
-    }
-
-    @noDerivative
-    public var zeroTangentVectorInitializer: () -> TangentVector {
-        { [zeroInits = map(\.zeroTangentVectorInitializer)] in
-            TangentVector(zeroInits.map { $0() })
         }
     }
 }
@@ -1210,26 +1168,17 @@ extension Optional: Differentiable where Wrapped: Differentiable {
         public typealias TangentVector = Self
         @differentiable(reverse)
         public var value: Wrapped.TangentVector?
+
         @differentiable(reverse)
         public init(_ value: Wrapped.TangentVector?) { self.value = value }
+
+        public static var zero: TangentVector { TangentVector(nil) }
         ...
     }
 
     public mutating func move(along direction: TangentVector) {
         if let value = direction.value {
             self?.move(along: value)
-        }
-    }
-
-    @noDerivative
-    public var zeroTangentVectorInitializer: () -> TangentVector {
-        switch self {
-        case nil:
-            return { TangentVector(nil) }
-        case let x?:
-            return { [zeroTanInit = x.zeroTangentVectorInitializer] in
-                TangentVector(zeroTanInit())
-            }
         }
     }
 }
@@ -1279,13 +1228,12 @@ product manifold of the manifolds each differentiable variable's type
 represents. Differentiable variables' types are required to conform to
 `Differentiable` because the synthesized implementation needs to access each
 differentiable variable's type's `TangentVector` associated type and invoke each
-differentiable variable's implementation of `move(along:)` and
-`zeroTangentVectorInitializer`. Because the synthesized implementation needs to
-invoke `move(along:)` on each differentiable variable, the differentiable
-variables must have a `move(along:)` which satisfies the protocol requirement
-and can be invoked on the property. That is, the property must be either a
-variable (`var`) or a constant (`let`) with a non-`mutating` implementation of
-the `move(along:)` protocol requirement.
+differentiable variable's implementation of `move(along:)`. Because the
+synthesized implementation needs to invoke `move(along:)` on each differentiable
+variable, the differentiable variables must have a `move(along:)` which
+satisfies the protocol requirement and can be invoked on the property. That is,
+the property must be either a variable (`var`) or a constant (`let`) with a
+non-`mutating` implementation of the `move(along:)` protocol requirement.
 
 The synthesized `TangentVector` has the same effective access level as the
 original type declaration. Properties in the synthesized `TangentVector` have
@@ -1293,12 +1241,6 @@ the same effective access level as their corresponding original properties.
 
 The synthesized `move(along:)` method calls `move(along:)` for each pair of a
 differentiable variable and its corresponding property in `TangentVector`.
-
-The synthesized `zeroTangentVectorInitializer` property returns a closure that
-captures and calls each stored property's `zeroTangentVectorInitializer`
-closure. When memberwise derivation is not possible (e.g. for custom
-user-defined `TangentVector` types), `zeroTangentVectorInitializer` is
-synthesized as a `{ TangentVector.zero }` closure.
 
 ```swift
 struct Foo<T: Differentiable, U: Differentiable>: Differentiable {
@@ -1317,13 +1259,6 @@ struct Foo<T: Differentiable, U: Differentiable>: Differentiable {
     //     mutating func move(along direction: TangentVector) {
     //         x.move(along: direction.x)
     //         y.move(along: direction.y)
-    //     }
-    //
-    //     var zeroTangentVectorInitializer: () -> TangentVector {
-    //         { [xTanInit = x.zeroTangentVectorInitializer,
-    //            yTanInit = y.zeroTangentVectorInitializer] in
-    //             TangentVector(x: xTanInit(), y: yTanInit())
-    //         }
     //     }
 }
 ```
@@ -1416,14 +1351,6 @@ struct Point<T: Real>: Differentiable, AdditiveArithmetic {
     // The compiler synthesizes:
     //
     //     typealias TangentVector = Self
-    //
-    //     @noDerivative
-    //     var zeroTangentVectorInitializer: () -> TangentVector {
-    //         { [xTanInit = x.zeroTangentVectorInitializer,
-    //            yTanInit = y.zeroTangentVectorInitializer] in
-    //             TangentVector(x: xTanInit(), y: yTanInit())
-    //         }
-    //     }
 }
 ```
 
