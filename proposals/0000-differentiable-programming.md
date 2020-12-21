@@ -1035,10 +1035,10 @@ public protocol Differentiable {
     associatedtype TangentVector: Differentiable & AdditiveArithmetic
         where TangentVector == TangentVector.TangentVector
 
-    /// Moves `self` along the given direction. In Riemannian geometry, this is
+    /// Moves `self` by the given direction. In Riemannian geometry, this is
     /// equivalent to exponential map, which moves `self` on the geodesic
-    /// surface along the given tangent vector.
-    mutating func move(along direction: TangentVector)
+    /// surface by the given tangent vector.
+    mutating func move(by direction: TangentVector)
 }
 ```
 
@@ -1090,18 +1090,18 @@ and
 [`+(_:_:)`](https://developer.apple.com/documentation/swift/additivearithmetic/3126821)
 are necessary for initializing and accumulating derivative values.
 
-The `move(along:)` method is equivalent to the mathematical notion of
-[exponential map](https://en.wikipedia.org/wiki/Exponential_map_\(Riemannian_geometry\)),
-which takes a tangent vector (e.g. a derivative), and moves the value along the
+The `move(by:)` method is equivalent to the mathematical notion of [exponential
+map](https://en.wikipedia.org/wiki/Exponential_map_\(Riemannian_geometry\)),
+which takes a tangent vector (e.g. a derivative), and moves the value by the
 direction specified by the tangent vector on the geodesic surface of the
 manifold. In vector spaces where the tangent vector is of the same vector space
-as the original differentiable space, `move(along:)` is equivalent to vector
+as the original differentiable space, `move(by:)` is equivalent to vector
 addition. Mathematical optimization algorithms such as gradient descent will
 make use of this method.
 
 ```swift
 public extension Differentiable where Self == TangentVector {
-    mutating func move(along direction: TangentVector) {
+    mutating func move(by direction: TangentVector) {
         self += direction
     }
 }
@@ -1155,9 +1155,9 @@ extension Array: Differentiable where Element: Differentiable {
         ...
     }
 
-    public mutating func move(along direction: TangentVector) {
+    public mutating func move(by direction: TangentVector) {
         for i in indices {
-            self[i].move(along: Element.TangentVector(direction.elements[i]))
+            self[i].move(by: Element.TangentVector(direction.elements[i]))
         }
     }
 }
@@ -1176,9 +1176,9 @@ extension Optional: Differentiable where Wrapped: Differentiable {
         ...
     }
 
-    public mutating func move(along direction: TangentVector) {
+    public mutating func move(by direction: TangentVector) {
         if let value = direction.value {
-            self?.move(along: value)
+            self?.move(by: value)
         }
     }
 }
@@ -1228,18 +1228,18 @@ product manifold of the manifolds each differentiable variable's type
 represents. Differentiable variables' types are required to conform to
 `Differentiable` because the synthesized implementation needs to access each
 differentiable variable's type's `TangentVector` associated type and invoke each
-differentiable variable's implementation of `move(along:)`. Because the
-synthesized implementation needs to invoke `move(along:)` on each differentiable
-variable, the differentiable variables must have a `move(along:)` which
+differentiable variable's implementation of `move(by:)`. Because the
+synthesized implementation needs to invoke `move(by:)` on each differentiable
+variable, the differentiable variables must have a `move(by:)` which
 satisfies the protocol requirement and can be invoked on the property. That is,
 the property must be either a variable (`var`) or a constant (`let`) with a
-non-`mutating` implementation of the `move(along:)` protocol requirement.
+non-`mutating` implementation of the `move(by:)` protocol requirement.
 
 The synthesized `TangentVector` has the same effective access level as the
 original type declaration. Properties in the synthesized `TangentVector` have
 the same effective access level as their corresponding original properties.
 
-The synthesized `move(along:)` method calls `move(along:)` for each pair of a
+The synthesized `move(by:)` method calls `move(by:)` for each pair of a
 differentiable variable and its corresponding property in `TangentVector`.
 
 ```swift
@@ -1256,9 +1256,9 @@ struct Foo<T: Differentiable, U: Differentiable>: Differentiable {
     //         var y: U.TangentVector
     //     }
     //
-    //     mutating func move(along direction: TangentVector) {
-    //         x.move(along: direction.x)
-    //         y.move(along: direction.y)
+    //     mutating func move(by direction: TangentVector) {
+    //         x.move(by: direction.x)
+    //         y.move(by: direction.y)
     //     }
 }
 ```
@@ -1268,7 +1268,7 @@ struct Foo<T: Differentiable, U: Differentiable>: Differentiable {
 The synthesized implementation of `Differentiable` protocol requirements already
 excludes stored properties that are not differentiable variables, such as stored
 properties that do not conform to `Differentiable` and `let`
-properties that do not have a non-mutating `move(along:)`. In addition to this
+properties that do not have a non-mutating `move(by:)`. In addition to this
 behavior, we also introduce a `@noDerivative` declaration attribute, which can
 be attached to properties that the programmer does not wish to include in the
 synthesized `Differentiable` protocol requirement implementation.
@@ -1317,7 +1317,7 @@ test.swift:5:4: note: add a '@noDerivative' attribute to make it explicit
     ^
     @noDerivative 
     
-test.swift:6:4: warning: synthesis of the 'Differentiable.move(along:)' requirement for 'Foo' requires all stored properties not marked with `@noDerivative` to be mutable
+test.swift:6:4: warning: synthesis of the 'Differentiable.move(by:)' requirement for 'Foo' requires all stored properties not marked with `@noDerivative` to be mutable
     let helperVariable: T
 
 test.swift:6:4: note: change 'let' to 'var' to make it mutable
@@ -1340,7 +1340,7 @@ properties are declared to conform to `AdditiveArithmetic`. There are no
 `@noDerivative` stored properties.
 
 In these cases, the compiler will make `TangentVector` be a type alias for `Self`.
-Method `move(along:)` will not be synthesized because a default implementation
+Method `move(by:)` will not be synthesized because a default implementation
 already exists.
 
 ```swift
