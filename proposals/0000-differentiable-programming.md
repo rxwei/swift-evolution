@@ -1038,7 +1038,7 @@ public protocol Differentiable {
     /// Moves `self` by the given direction. In Riemannian geometry, this is
     /// equivalent to exponential map, which moves `self` on the geodesic
     /// surface by the given tangent vector.
-    mutating func move(by direction: TangentVector)
+    mutating func move(by offset: TangentVector)
 }
 ```
 
@@ -1101,7 +1101,7 @@ make use of this method.
 
 ```swift
 public extension Differentiable where Self == TangentVector {
-    mutating func move(by direction: TangentVector) {
+    mutating func move(by offset: TangentVector) {
         self += direction
     }
 }
@@ -1155,7 +1155,7 @@ extension Array: Differentiable where Element: Differentiable {
         ...
     }
 
-    public mutating func move(by direction: TangentVector) {
+    public mutating func move(by offset: TangentVector) {
         for i in indices {
             self[i].move(by: Element.TangentVector(direction.elements[i]))
         }
@@ -1176,7 +1176,7 @@ extension Optional: Differentiable where Wrapped: Differentiable {
         ...
     }
 
-    public mutating func move(by direction: TangentVector) {
+    public mutating func move(by offset: TangentVector) {
         if let value = direction.value {
             self?.move(by: value)
         }
@@ -1256,7 +1256,7 @@ struct Foo<T: Differentiable, U: Differentiable>: Differentiable {
     //         var y: U.TangentVector
     //     }
     //
-    //     mutating func move(by direction: TangentVector) {
+    //     mutating func move(by offset: TangentVector) {
     //         x.move(by: direction.x)
     //         y.move(by: direction.y)
     //     }
